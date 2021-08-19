@@ -21,22 +21,22 @@ namespace PokemonAPI.Controllers
     [Route("[controller]")]
     public class PokemonController : ControllerBase
     {
-        private readonly ILogger<PokemonController> _logger;
         private readonly IConfiguration _config;
-        public PokemonController(ILogger<PokemonController> logger, IConfiguration config)
+        public PokemonController( IConfiguration config)
         {
-            _logger = logger;
             _config = config;
         }
 
+        /// <summary>
+        /// The Get method will be used as Endpoint 1 to return the Basic Pokemon Information.
+        /// </summary>
         [HttpGet]
         [HttpGet("{name}")]
-        //[Route("~/pokemon/")]
         public Array Get(string name)
         {
             try
             {
-                if(!(name is null) || name != null)
+                if(!string.IsNullOrEmpty(name)) 
                 {
                     string pokeAPIUrl = _config[Constants.PokeAPIURL].ToString();
                     string url = pokeAPIUrl + name;
@@ -45,7 +45,6 @@ namespace PokemonAPI.Controllers
                     IRestResponse response = client.Execute(request);
                     var pokemonJsonString = response.Content;
                     var status = response.StatusCode.ToString();
-                    PokemonResult[] array = Enumerable.Empty<PokemonResult>().ToArray();
                     if (status == "OK")
                     {
                         var jsonResult = JsonConvert.DeserializeObject<PokemonSpecies>(pokemonJsonString);
@@ -66,7 +65,7 @@ namespace PokemonAPI.Controllers
                 }
                 else
                 {
-                    string[] errorList = { "Please provide pokemon name!!" };
+                    string[] errorList = { "Please provide pokemon name!! Example: http://localhost:44343/pokemon/mewtwo" };
                     return errorList;
                 }
                 
@@ -77,32 +76,34 @@ namespace PokemonAPI.Controllers
             }
         }
 
-        //[HttpGet("{name}")]
+        /// <summary>
+        /// The Translated method will be used as Endpoint 2 to return the Translated Pokemon Description.
+        /// </summary>
         [Route("~/pokemon/translated")]
         [Route("~/pokemon/translated/{name}")]
         public Array Translated(string name)
         {
             try
             {
-                if (!(name is null) || name != null)
+                if (!string.IsNullOrEmpty(name))
                 {
                     string pokeAPIUrl = _config[Constants.PokeAPIURL].ToString();
                     string url = pokeAPIUrl + name;
                     var client = new RestClient(url);
-
                     var request = new RestRequest(Method.GET);
                     IRestResponse response = client.Execute(request);
                     var pokemonJsonString = response.Content;
                     var status = response.StatusCode.ToString();
-
                     if (status == "OK")
                     {
                         var jsonResult = JsonConvert.DeserializeObject<PokemonSpecies>(pokemonJsonString);
-
                         jsonResult.FlavorTextEntries[0].FlavorText = Regex.Replace(jsonResult.FlavorTextEntries[0].FlavorText, @"\t|\n|\r|\f", " ");
 
                         if (jsonResult.Habitat.Name == "cave" || jsonResult.IsLegendary == true)
                         {
+                            /*Please note that due to subsription reason, could not use the basic fun translations API. But have tried used another version of
+                            the API for Yoda translation. This API allows to use the translation for 5 times in an hour. So, if we use it for more than 5 times 
+                            within in an hour, then we are displaying the standard description.*/
                             string yodaAPIUrl = _config[Constants.YodaAPIURL].ToString();
                             string yodaURL = yodaAPIUrl + "?text=" + jsonResult.FlavorTextEntries[0].FlavorText;
                             var yodaClient = new RestClient(yodaURL);
@@ -119,6 +120,9 @@ namespace PokemonAPI.Controllers
                         }
                         else
                         {
+                            /*Please note that due to subsription reason, could not use the basic fun translations API. But have tried used another version of
+                            the API for Shakespeare translation. This API allows to use the translation for 5 times in an hour. So, if we use it for more than 5 times 
+                            within in an hour, then we are displaying the standard description.*/
                             string shakespeareAPIUrl = _config[Constants.ShakespeareAPURL].ToString();
                             string shakespeareURL = shakespeareAPIUrl + "?text=" + jsonResult.FlavorTextEntries[0].FlavorText;
                             var shakespeareClient = new RestClient(shakespeareURL);
@@ -150,7 +154,7 @@ namespace PokemonAPI.Controllers
                 }
                 else
                 {
-                    string[] errorList = { "Please provide pokemon name!!" };
+                    string[] errorList = { "Please provide pokemon name!! Example: http://localhost:44343/pokemon/translated/mewtwo" };
                     return errorList;
                 }
             }
